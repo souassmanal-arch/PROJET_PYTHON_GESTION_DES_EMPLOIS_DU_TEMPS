@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section style="padding: 6rem 0; text-align: center;">
+    <div class="container">
+        <div style="display: flex; align-items: center; gap: 4rem; text-align: left;">
+            <div style="flex: 1;">
+                <h1
+                    style="font-size: 4rem; font-weight: 800; color: var(--navy); line-height: 1.1; margin-bottom: 2rem;">
+                    Projet de Gestion des <span style="color: var(--primary);">Emplois du Temps</span>
+                </h1>
+                <p style="font-size: 1.25rem; color: var(--text-main); margin-bottom: 3rem; line-height: 1.8;">
+                    Une plateforme intelligente et centralisée pour les enseignants et étudiants. Gérez vos cours,
+                    réservez des salles et restez informé en temps réel avec notre interface haute performance.
+                </p>
+                <div style="display: flex; gap: 1rem;">
+                    <a href="/login" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.1rem;">
+                        Accéder au Portail <i class="fas fa-arrow-right"></i>
+                    </a>
+                    <a href="#features" class="btn btn-outline" style="padding: 1rem 2rem; font-size: 1.1rem;">
+                        Voir Fonctionnalités
+                    </a>
+                </div>
+            </div>
+            <div style="flex: 1;">
+                <div class="card" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+                    <img src="{{ url_for('static', filename='images/hero.png') }}"
+                        style="width: 100%; height: auto; border-radius: 20px;" alt="Digital Scheduling Illustration">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="features" style="padding: 4rem 0; background: rgba(255,255,255,0.5);">
+    <div class="container">
+        <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 4rem; color: var(--navy);">Conçu pour
+            l'excellence académique</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+            <div class="card">
+                <i class="fas fa-school" style="font-size: 2rem; color: var(--primary); margin-bottom: 1.5rem;"></i>
+                <h3 style="margin-bottom: 1rem;">Gestion Intelligente</h3>
+                <p class="text-muted">Détection automatique des conflits et optimisation des salles pour une gestion
+                    sans stress.</p>
+            </div>
+            <div class="card">
+                <i class="fas fa-bolt" style="font-size: 2rem; color: var(--success); margin-bottom: 1.5rem;"></i>
+                <h3 style="margin-bottom: 1rem;">Temps Réel</h3>
+                <p class="text-muted">Notifications instantanées pour les étudiants et réservations directes pour les
+                    enseignants.</p>
+            </div>
+            <div class="card">
+                <i class="fas fa-shield-alt" style="font-size: 2rem; color: var(--navy); margin-bottom: 1.5rem;"></i>
+                <h3 style="margin-bottom: 1rem;">Accès Sécurisé</h3>
+                <p class="text-muted">Des tableaux de bord personnalisés selon votre rôle (Admin, Enseignant, Étudiant).
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

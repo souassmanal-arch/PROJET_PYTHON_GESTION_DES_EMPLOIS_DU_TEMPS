@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-grid">
+        <aside class="sidebar">
+            <div style="margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
+                <p style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: bold;">Enseignant
+                </p>
+                <h3 id="user-name" style="margin-top: 0.25rem;">Professeur</h3>
+            </div>
+            <nav>
+                <a href="#" class="side-link active" data-tab="tab-schedule"><i class="fas fa-calendar-alt"></i> Emploi
+                    du Temps</a>
+                <a href="#" class="side-link" data-tab="tab-reserve"><i class="fas fa-plus-circle"></i> Réserver
+                    salle</a>
+                <a href="#" class="side-link" data-tab="tab-vacant"><i class="fas fa-search"></i> Salles Vacantes</a>
+                <a href="#" class="side-link" data-tab="tab-history"><i class="fas fa-history"></i> Historique
+                    Requests</a>
+            </nav>
+        </aside>
+
+        <section class="main-content">
+            <!-- TAB: SCHEDULE -->
+            <div id="tab-schedule" class="tab-content active">
+                <h2 style="margin-bottom: 1.5rem; color: var(--navy);">📅 Mon Emploi du Temps</h2>
+                <div id="schedule-body" class="horizontal-scroll">
+                    <!-- Cards injected here -->
+                </div>
+            </div>
+
+            <!-- TAB: RESERVE -->
+            <div id="tab-reserve" class="tab-content">
+                <h2 style="margin-bottom: 1.5rem; color: var(--navy);">➕ Nouvelle Réservation</h2>
+                <div class="card" style="max-width: 600px;">
+                    <form id="reserve-form">
+                        <div class="form-group">
+                            <label>Salle souhaitée</label>
+                            <select id="res-room" required></select>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Date</label>
+                                <input type="date" id="res-date" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Heure Début</label>
+                                <input type="time" id="res-start" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Motif / Séance</label>
+                            <input type="text" id="res-motif" placeholder="ex: Rattrapage Python" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Envoyer la demande</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TAB: VACANT -->
+            <div id="tab-vacant" class="tab-content">
+                <h2 style="margin-bottom: 1.5rem; color: var(--navy);">🔍 Trouver une salle libre</h2>
+                <div class="card">
+                    <div style="display: flex; gap: 1rem; margin-bottom: 2rem; align-items: flex-end;">
+                        <div style="flex: 1;">
+                            <label>Date</label>
+                            <input type="date" id="search-date">
+                        </div>
+                        <div style="flex: 1;">
+                            <label>Tranche horaire</label>
+                            <select id="search-slot">
+                                <option value="08:30-10:00">08:30 - 10:00</option>
+                                <option value="10:15-11:45">10:15 - 11:45</option>
+                                <option value="14:30-16:00">14:30 - 16:00</option>
+                                <option value="16:15-17:45">16:15 - 17:45</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="searchVacant()">Rechercher</button>
+                    </div>
+                    <div id="vacant-results"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                        <!-- Results -->
+                        <p class="text-muted">Sélectionnez une date pour voir les salles disponibles.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: HISTORY -->
+            <div id="tab-history" class="tab-content">
+                <h2 style="margin-bottom: 1.5rem; color: var(--navy);">📜 Historique de mes demandes</h2>
+                <div id="history-body" class="horizontal-scroll">
+                    <!-- Cards injected here -->
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user || user.role !== 'teacher') window.location.href = '/login';
+    document.getElementById('user-name').textContent = user.username;
+
+    // Tab Logic
+    document.querySelectorAll('.side-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.side-link').forEach(l => l.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+
+            const tabId = e.currentTarget.getAttribute('data-tab');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        });
+    });
+
+    // Initial Load
+    document.addEventListener('DOMContentLoaded', async () => {
+        loadSchedule();
+        loadRooms();
+        loadHistory();
+
+        // Default dates
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('res-date').value = today;
+        document.getElementById('search-date').value = today;
+    });
+
+    async function loadSchedule() {
+        const res = await fetch(`/api/schedules?teacher_id=${user.id}`);
+        const data = await res.json();
+        const body = document.getElementById('schedule-body');
+        body.innerHTML = '';
+        data.forEach(s => {
+            body.innerHTML += `
+                <div class="card horizontal-card">
+                    <div style="font-size: 0.8rem; color: var(--primary); font-weight: 800; margin-bottom: 0.5rem; text-transform: uppercase;">
+                        ${s.day_of_week} | ${s.start_time.substring(0, 5)}
+                    </div>
+                    <h3 style="margin-bottom: 1rem; color: var(--navy)">${s.course_name}</h3>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--text-main);">
+                         <i class="fas fa-users" style="color: var(--primary)"></i> Groupe: ${s.group_id}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--text-main); margin-top: 0.5rem;">
+                         <i class="fas fa-map-marker-alt" style="color: var(--primary)"></i> Salle ${s.room_id}
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    async function loadRooms() {
+        const res = await fetch('/api/rooms/');
+        const data = await res.json();
+        const sel = document.getElementById('res-room');
+        sel.innerHTML = ''; // Clear
+        data.forEach(r => {
+            const opt = document.createElement('option');
+            opt.value = r.id;
+            opt.textContent = r.name;
+            sel.appendChild(opt);
+        });
+    }
+
+    async function loadHistory() {
+        const res = await fetch(`/api/reservations/?teacher_id=${user.id}`);
+        const data = await res.json();
+        const body = document.getElementById('history-body');
+        body.innerHTML = '';
+        data.forEach(r => {
+            const statusClass = `badge-${r.status}`;
+            body.innerHTML += `
+                <div class="card horizontal-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <span class="badge ${statusClass}">${r.status.toUpperCase()}</span>
+                        <small class="text-muted">${r.date}</small>
+                    </div>
+                    <h4 style="color: var(--navy)">Salle ${r.room_id}</h4>
+                    <p class="text-muted" style="font-size: 0.85rem; margin-top: 0.5rem;">${r.motif}</p>
+                </div>
+            `;
+        });
+    }
+
+    async function searchVacant() {
+        const date = document.getElementById('search-date').value;
+        const res = await fetch(`/api/rooms/vacant?date=${date}`);
+        const data = await res.json();
+        const grid = document.getElementById('vacant-results');
+        grid.innerHTML = '';
+        data.forEach(r => {
+            grid.innerHTML += `
+                <div class="card" style="padding:1.5rem; text-align:center;">
+                    <i class="fas fa-door-open" style="font-size:2rem; color:var(--success); margin-bottom:1rem;"></i>
+                    <h4>${r.name}</h4>
+                    <p class="text-muted" style="font-size:0.8rem">${r.type}</p>
+                    <p class="badge badge-approved" style="margin-top:0.5rem">Disponible</p>
+                </div>
+            `;
+        });
+    }
+
+    document.getElementById('reserve-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const reservation_data = {
+            teacher_id: user.id,
+            room_id: document.getElementById('res-room').value,
+            date: document.getElementById('res-date').value,
+            start_time: document.getElementById('res-start').value,
+            end_time: '18:00', // simplified
+            motif: document.getElementById('res-motif').value
+        };
+        const res = await fetch('/api/reservations/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reservation_data)
+        });
+        if (res.ok) {
+            alert('Demande envoyée avec succès !');
+            loadHistory();
+        }
+    });
+
+</script>
+{% endblock %}

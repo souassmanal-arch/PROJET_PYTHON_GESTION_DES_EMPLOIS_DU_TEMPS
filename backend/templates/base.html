@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniScheduler | Projet de Gestion des Emplois du Temps</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Style -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <div class="bg-animation" id="bg-animation"></div>
+
+    <header>
+        <div class="container">
+            <nav>
+                <a href="/" class="logo" style="text-decoration: none;">
+                    <i class="fas fa-calendar-check"></i>
+                    Uni<span>Scheduler</span>
+                </a>
+                <div class="nav-links">
+                    {% if session.get('user_id') %}
+                    <a href="/logout" class="btn btn-outline">Logout</a>
+                    {% else %}
+                    <a href="/login" class="btn btn-primary">Login / Sign In</a>
+                    {% endif %}
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        // BIRDS ANIMATION FACTORY
+        const bg = document.getElementById('bg-animation');
+        const colors = ['#3b82f6', '#0ea5e9', '#6366f1'];
+
+        for (let i = 0; i < 15; i++) {
+            const bird = document.createElement('div');
+            bird.className = 'bird';
+            const duration = 15 + Math.random() * 20 + 's';
+            const startY = 10 + Math.random() * 80 + 'vh';
+            const endY = 10 + Math.random() * 80 + 'vh';
+
+            bird.style.setProperty('--duration', duration);
+            bird.style.setProperty('--start-y', startY);
+            bird.style.setProperty('--end-y', endY);
+            bird.style.left = -Math.random() * 20 + 'vw';
+            bird.style.top = startY;
+            bird.style.background = colors[Math.floor(Math.random() * colors.length)];
+
+            bg.appendChild(bird);
+        }
+
+        // FLASH MESSAGES logic (simple alert for now)
+        function notify(msg, type = 'info') {
+            alert(msg);
+        }
+    </script>
+</body>
+
+</html>

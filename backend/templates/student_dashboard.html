@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-grid">
+        <aside class="sidebar">
+            <div style="margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
+                <p style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: bold;">Étudiant</p>
+                <h3 id="user-name">Étudiant</h3>
+            </div>
+            <nav>
+                <a href="#" class="side-link active" data-tab="tab-schedule"><i class="fas fa-calendar-week"></i> Mon
+                    Emploi du Temps</a>
+                <a href="#" class="side-link" data-tab="tab-notifications"><i class="fas fa-bell"></i> Notifications
+                    <span id="notif-count" class="badge"
+                        style="background:var(--danger); color:white; display:none;">0</span></a>
+                <a href="#" class="side-link" data-tab="tab-study"><i class="fas fa-book-reader"></i> Trouver Salle
+                    d'Étude</a>
+            </nav>
+        </aside>
+
+        <section class="main-content">
+            <!-- TAB: SCHEDULE -->
+            <div id="tab-schedule" class="tab-content active">
+                <h2 style="margin-bottom: 1.5rem; color: var(--navy);">📅 Mon Emploi du Temps</h2>
+                <div id="schedule-body" class="horizontal-scroll">
+                    <!-- Cards will be injected here -->
+                </div>
+            </div>
+
+            <!-- TAB: NOTIFICATIONS -->
+            <div id="tab-notifications" class="tab-content">
+                <h2 style="margin-bottom: 1.5rem; color: var(--navy);">🔔 Mes Notifications</h2>
+                <div id="notif-container" class="horizontal-scroll">
+                    <!-- Notifications will be injected here -->
+                </div>
+            </div>
+
+            <!-- TAB: STUDY ROOM -->
+            <div id="tab-study" class="tab-content">
+                <h2 style="margin-bottom: 1.5rem; color: var(--navy);">📖 Salles disponibles pour étude</h2>
+                <div class="card">
+                    <p class="text-muted mb-4">Voici les salles actuellement libres pour vos travaux de groupe ou
+                        révisions individuelles.</p>
+                    <div id="study-rooms-grid"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem;">
+                        <!-- Results -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user || user.role !== 'student') window.location.href = '/login';
+    document.getElementById('user-name').textContent = user.username;
+
+    // Tab Logic
+    document.querySelectorAll('.side-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.side-link').forEach(l => l.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+
+            const tabId = e.currentTarget.getAttribute('data-tab');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadSchedule();
+        loadNotifications();
+        loadStudyRooms();
+    });
+
+    async function loadSchedule() {
+        const res = await fetch(`/api/schedules?group_id=${user.group_id}`);
+        const data = await res.json();
+        const body = document.getElementById('schedule-body');
+        body.innerHTML = '';
+        data.forEach(s => {
+            body.innerHTML += `
+                <div class="card horizontal-card">
+                    <div style="font-size: 0.8rem; color: var(--primary); font-weight: 800; margin-bottom: 0.5rem; text-transform: uppercase;">
+                        ${s.day_of_week} | ${s.start_time.substring(0, 5)}
+                    </div>
+                    <h3 style="margin-bottom: 1rem; color: var(--navy)">${s.course_name}</h3>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--text-main);">
+                        <i class="fas fa-map-marker-alt" style="color: var(--primary)"></i> Salle ${s.room_id}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--text-main); margin-top: 0.5rem;">
+                        <i class="fas fa-user-tie" style="color: var(--primary)"></i> ${s.teacher_name || 'Prof. ...'}
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    async function loadNotifications() {
+        const res = await fetch(`/api/notifications/?user_id=${user.id}`);
+        const data = await res.json();
+        const container = document.getElementById('notif-container');
+        const countBadge = document.getElementById('notif-count');
+
+        container.innerHTML = '';
+        if (data.length > 0) {
+            countBadge.style.display = 'inline';
+            countBadge.textContent = data.length;
+        }
+
+        data.forEach(n => {
+            const colorMap = { 'info': '#3b82f6', 'success': '#10b981', 'warning': '#f59e0b', 'danger': '#ef4444' };
+            container.innerHTML += `
+                <div class="card horizontal-card" style="border-left: 5px solid ${colorMap[n.type] || '#ccc'}">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem;">
+                        <strong style="color:var(--navy)">${n.title}</strong>
+                        <small class="text-muted" style="font-size: 0.7rem;">${n.created_at}</small>
+                    </div>
+                    <p style="font-size:0.85rem; line-height: 1.5;">${n.message}</p>
+                </div>
+            `;
+        });
+    }
+
+    async function loadStudyRooms() {
+        const res = await fetch('/api/rooms/');
+        const data = await res.json();
+        const grid = document.getElementById('study-rooms-grid');
+        grid.innerHTML = '';
+        // Show first 6 as "Study friendly"
+        data.slice(0, 6).forEach(r => {
+            grid.innerHTML += `
+                <div class="card" style="padding:1.5rem; text-align:center;">
+                    <i class="fas fa-university" style="font-size:2rem; color:var(--primary); margin-bottom:1rem;"></i>
+                    <h4>${r.name}</h4>
+                    <p class="badge badge-approved" style="margin-top:0.5rem">Disponible Étude</p>
+                    <p class="text-muted" style="font-size:0.8rem; margin-top:0.5rem">Équipement: ${r.equipment}</p>
+                </div>
+            `;
+        });
+    }
+</script>
+{% endblock %}

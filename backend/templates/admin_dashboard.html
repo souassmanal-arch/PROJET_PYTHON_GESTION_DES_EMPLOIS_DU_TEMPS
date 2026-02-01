@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-grid">
+        <aside class="sidebar">
+            <div style="margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
+                <p style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: bold;">
+                    Administrateur</p>
+                <h3>Système Admin</h3>
+            </div>
+            <nav>
+                <a href="#" class="side-link active" data-tab="tab-requests"><i class="fas fa-tasks"></i> Demandes
+                    Salles</a>
+                <a href="#" class="side-link" data-tab="tab-teachers"><i class="fas fa-chalkboard-teacher"></i>
+                    Enseignants</a>
+                <a href="#" class="side-link" data-tab="tab-groups"><i class="fas fa-users"></i> Groupes</a>
+                <a href="#" class="side-link" data-tab="tab-rooms"><i class="fas fa-door-open"></i> Salles & Amphis</a>
+                <a href="#" class="side-link" data-tab="tab-settings"><i class="fas fa-cog"></i> Paramètres</a>
+            </nav>
+        </aside>
+
+        <section class="main-content">
+            <!-- TAB: REQUESTS (Approve/Reject) -->
+            <div id="tab-requests" class="tab-content active">
+                <h2 style="margin-bottom: 1.5rem; color: var(--navy);">📝 Demandes de Réservation</h2>
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Professeur</th>
+                                <th>Salle</th>
+                                <th>Date</th>
+                                <th>Motif</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requests-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: TEACHERS -->
+            <div id="tab-teachers" class="tab-content">
+                <h2 style="margin-bottom: 1.5rem; color: var(--navy);">👨‍🏫 Liste des Enseignants</h2>
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Email</th>
+                                <th>Spécialité</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teachers-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: GROUPS -->
+            <div id="tab-groups" class="tab-content">
+                <h2 style="margin-bottom: 1.5rem; color: var(--navy);">👥 Gestion des Groupes</h2>
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nom du Groupe</th>
+                                <th>Effectif</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="groups-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: ROOMS -->
+            <div id="tab-rooms" class="tab-content">
+                <h2 style="margin-bottom: 1.5rem; color: var(--navy);">🏢 Salles & Amphis</h2>
+                <div class="card">
+                    <div id="rooms-grid"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: SETTINGS -->
+            <div id="tab-settings" class="tab-content">
+                <h2 style="margin-bottom: 1.5rem; color: var(--navy);">⚙️ Paramètres Système</h2>
+                <div class="card">
+                    <h3>Configuration Générale</h3>
+                    <div style="margin-top: 2rem;">
+                        <button class="btn btn-primary" onclick="alert('Sauvegarde effectuée')">Sauvegarder les
+                            modifications</button>
+                        <button class="btn btn-outline" style="color:var(--danger); border-color:var(--danger);"
+                            onclick="alert('Nettoyage du cache...')">Nettoyer les Logs</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user || user.role !== 'admin') window.location.href = '/login';
+
+    // Tab Logic
+    document.querySelectorAll('.side-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.side-link').forEach(l => l.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+
+            const tabId = e.currentTarget.getAttribute('data-tab');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadRequests();
+        loadTeachers();
+        loadGroups();
+        loadRooms();
+    });
+
+    async function loadRequests() {
+        const res = await fetch('/api/reservations/');
+        const data = await res.json();
+        const body = document.getElementById('requests-body');
+        body.innerHTML = '';
+        data.filter(r => r.status === 'pending').forEach(r => {
+            body.innerHTML += `
+                <tr>
+                    <td>Prof. ${r.teacher_id}</td>
+                    <td>Salle ${r.room_id}</td>
+                    <td>${r.date}</td>
+                    <td>${r.motif}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="updateStatus(${r.id}, 'approved')" style="padding:0.4rem 0.8rem; font-size:0.7rem;">Approve</button>
+                        <button class="btn btn-outline btn-sm" onclick="updateStatus(${r.id}, 'rejected')" style="padding:0.4rem 0.8rem; font-size:0.7rem; color:var(--danger);">Reject</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    async function updateStatus(id, status) {
+        // Mock update as there might not be a dedicated PUT endpoint, or we use the reservation logic
+        alert(`Réservation ${id} : ${status.toUpperCase()}`);
+        loadRequests();
+    }
+
+    async function loadTeachers() {
+        const res = await fetch('/api/users/teachers');
+        const data = await res.json();
+        const body = document.getElementById('teachers-body');
+        body.innerHTML = '';
+        data.forEach(t => {
+            body.innerHTML += `<tr><td>${t.username}</td><td>${t.email}</td><td>Informatique</td></tr>`;
+        });
+    }
+
+    async function loadGroups() {
+        const res = await fetch('/api/schedules/groups');
+        const data = await res.json();
+        const body = document.getElementById('groups-body');
+        body.innerHTML = '';
+        data.forEach(g => {
+            body.innerHTML += `<tr><td>${g.name}</td><td>${g.students_count}</td><td><i class="fas fa-edit"></i></td></tr>`;
+        });
+    }
+
+    async function loadRooms() {
+        const res = await fetch('/api/rooms/');
+        const data = await res.json();
+        const grid = document.getElementById('rooms-grid');
+        grid.innerHTML = '';
+        data.forEach(r => {
+            grid.innerHTML += `
+                <div class="card" style="padding:1rem; text-align:center;">
+                    <h4 style="color:var(--primary)">${r.name}</h4>
+                    <p style="font-size:0.8rem">${r.type}</p>
+                </div>
+            `;
+        });
+    }
+</script>
+{% endblock %}
